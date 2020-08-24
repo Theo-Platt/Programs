@@ -1,8 +1,4 @@
-/**
- * 
- */
-package edu.nmsu.cs.helloworld;
-
+package edu.nmsu.cs.HelloWorld;
 /**
  * @author Hamnp
  *

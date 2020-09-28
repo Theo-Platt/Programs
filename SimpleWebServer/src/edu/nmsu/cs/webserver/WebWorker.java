@@ -22,6 +22,7 @@ package edu.nmsu.cs.webserver;
  **/
 
 import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +33,7 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.Scanner;
 import java.time.*;
+import java.io.BufferedInputStream;
 
 public class WebWorker implements Runnable
 {
@@ -46,6 +48,48 @@ public class WebWorker implements Runnable
 		socket = s;
 	}
 
+	public void htmlHelper(OutputStream os, String neededFile) {
+		try {
+			FileReader file = new FileReader(neededFile);
+			Scanner scan = new Scanner(file);
+			String fileLine = "";
+			while(scan.hasNextLine()) {
+				fileLine = scan.nextLine();
+				LocalDate date = LocalDate.now();
+				fileLine = fileLine.replaceAll("<cs371date>", date.toString());
+				fileLine = fileLine.replaceAll("<cs371server>", "John Titor's Server");
+				os.write(fileLine.getBytes());
+			}
+			scan.close();
+			}catch(Exception e){
+				System.err.println("Output error: " + e);
+			}
+		return;
+	}
+	
+
+	
+	public void imgHelper(OutputStream os, String neededFile) {
+		try {
+			//FileReader file = new FileReader(neededFile);
+			BufferedInputStream is = new BufferedInputStream(new FileInputStream(neededFile));
+			//Scanner scan = new Scanner(file);  //buffered input stream
+			int fileLine = is.read();
+			while(fileLine != -1) {
+				os.write(fileLine);
+				fileLine = is.read(); //don't use next byte use input stream
+//				os.write(fileLine);
+			}
+			is.close();
+			}catch(Exception e){
+				System.err.println("Output error: " + e);
+			}finally{
+				
+			}
+		return;
+	}
+
+	
 	/**
 	 * Worker thread starting point. Each worker handles just one HTTP request and then returns, which
 	 * destroys the thread. This method assumes that whoever created the worker created it with a
@@ -60,36 +104,27 @@ public class WebWorker implements Runnable
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
 			neededFile = readHTTPRequest(is);
-			writeHTTPHeader(os, "text/html", neededFile);
-			if(neededFile.equals("")) { 
+			
+			if(neededFile.contains(".html")) {
+				writeHTTPHeader(os, "text/html", neededFile);
+				htmlHelper(os, neededFile);
+			}
+			else if(neededFile.contains(".gif")) {
+				writeHTTPHeader(os, "image/gif", neededFile);
+				imgHelper(os, neededFile);
+			}
+			else if(neededFile.toLowerCase().contains(".png")) {
+				writeHTTPHeader(os, "image/png", neededFile);
+				imgHelper(os, neededFile);
+			}
+			else if(neededFile.contains(".jpg")||neededFile.toLowerCase().contains(".jpeg")) {
+				writeHTTPHeader(os, "image/jpeg", neededFile);
+				imgHelper(os, neededFile);
+			}
+			else if(neededFile.equals("")) {
+				writeHTTPHeader(os, "text/html", neededFile);
 				writeContent(os);
-			}//end if
-			else { 
-				try {
-				FileReader file = new FileReader(neededFile);
-				Scanner scan = new Scanner(file);
-				String fileLine = "";
-				while(scan.hasNextLine()) {
-					fileLine = scan.nextLine();
-					//while the string has the tags, replace them with information.
-					int tag1 = fileLine.indexOf("<cs371date>");
-					int tag2 = fileLine.indexOf("<cs371server>");
-					while(tag1 != -1 && tag2 != -1) {
-						LocalDate date = LocalDate.now();
-						String fileLineTemp = fileLine.substring(0,tag1) + date + fileLine.substring(tag1+11, fileLine.length());
-						fileLine = fileLineTemp;
-						fileLineTemp = fileLine.substring(0,tag2-1) + "John Titor's Server" + fileLine.substring(tag2+12, fileLine.length());
-						fileLine = fileLineTemp;
-						tag1 = fileLine.indexOf("<cs371date>");
-						tag2 = fileLine.indexOf("<cs371server>");
-					}
-					os.write(fileLine.getBytes());
-				}
-				scan.close();
-				}catch(Exception e){
-					System.err.println("Output error: " + e);
-				}
-			}//end else
+			}
 			os.flush();
 			socket.close();
 		}

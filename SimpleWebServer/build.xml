@@ -1,4 +1,4 @@
-<project name ="SimpleWebServer" default="cleanbuild" basedir=".">
+<project name ="SimpleWebServer" default="run" basedir=".">
 	<description>
 		Buildfile to clean and compile the code, and includes a run target to run the program with default port(8080).
 	</description>
@@ -16,7 +16,7 @@
 	
 	<target name="cleanbuild" depends="clean,build"/>
 	
-	<target name="run" description="runs WebServer.java on port 8080">
+	<target name="run" description="runs WebServer.java on port 8080" depends="cleanbuild">
 		<java classname="edu.nmsu.cs.webserver.WebServer" classpath="${build}" fork="true" dir="${basedir}/www">
 			<arg value="8080"/>
 		</java>
